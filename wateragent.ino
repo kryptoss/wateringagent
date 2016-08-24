@@ -21,9 +21,11 @@ This software is to be used in a watering system conected to:
 Relay 1: Water pump
 Relay 2: Valve, to avoid communicating vessels problem if plants are lower than water pump
 Potentiometer: For selecting how much time watering the plants. Useful mainly for testing.
+Two strip wire inside tank. While water touchs both wire, there is enough water, else water pump should not be started.
 
 Using 2 relays, power should be connected directly, because arduino hos not enough current in its pins.
-Potentiometer should be connected with side pins to Vcc and ground, and central pin to an arduino analog pin 
+Potentiometer should be connected with side pins to Vcc and ground, and central pin to an arduino analog pin
+A strip wire should be connected to 5V and the other to GPIO pin
 
 **/
 
@@ -31,7 +33,7 @@ Potentiometer should be connected with side pins to Vcc and ground, and central 
 const int valvePin = 7;      // the number of the riego pin (output)
 const int pumpPin = 4;
 const int wateringTimeSelector = A2;   //number of analog pin, potentiometer
-
+const int emptyTankSensor= 9; //
 
 
 
@@ -41,7 +43,9 @@ long dailyCounter = (24L*60L*60L-60)*(1000L/delayTime);  //first time watering a
 
 void setup() {
   pinMode(valvePin, OUTPUT);
-  pinMode(pumpPin, OUTPUT); 
+  pinMode(pumpPin, OUTPUT);
+  pinMode(emptyTankSensor, INPUT);
+  pinMode(wateringTimeSelector, INPUT);
   Serial.begin(9600);
   // set initial watering state
   digitalWrite(valvePin, HIGH);// off, relays active at low state
@@ -50,10 +54,12 @@ void setup() {
 }
 
 void watering() {
-  int val = analogRead(wateringTimeSelector);
+  
+  if(emptyTankSensor==HIGH){
+      int val = analogRead(wateringTimeSelector);
       Serial.print("read value ");
       Serial.println(val);
-      val = map(val, 0, 1024, 5, 60);//maps read value (0-1024 10 bits adc) to between 5 to 60 seconds
+      val = map(val, 0, 1024, 5, 120);//maps read value (0-1024 10 bits adc) to between 5 to 120 seconds
       Serial.print("Time on: ");
       Serial.println(val);
       digitalWrite(valvePin, LOW);//relays active at low state
@@ -65,6 +71,8 @@ void watering() {
       digitalWrite(pumpPin, HIGH);
       dailyCounter=dailyCounter+(val/100);//adds time used for watering in 100ms units
       Serial.println("Watering off");
+      
+  }
 }
 
 void loop() {
